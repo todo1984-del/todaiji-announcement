@@ -7,16 +7,17 @@ st.set_page_config(
     layout="centered"
 )
 
-# 画面の余白やタイトルの大きさをコンパクトにするCSS
+# 上部が切れないように余裕を持たせたCSS
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1rem;
+        padding-top: 2rem;
         padding-bottom: 1rem;
     }
     h1 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.5rem;
+        font-size: 1.4rem !important;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -59,7 +60,7 @@ templates = {
 if "selected_key" not in st.session_state:
     st.session_state.selected_key = "その他（自由入力）"
 
-# ボタンを2列（横並び）でコンパクトに配置
+# ボタンを2列（横並び）で配置
 col1, col2 = st.columns(2)
 with col1:
     if st.button("🛍️ 落とし物", use_container_width=True):
