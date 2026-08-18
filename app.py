@@ -7,8 +7,17 @@ st.set_page_config(
     layout="centered"
 )
 
+# 余白と高さを抑えるためのCSS調整
+st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🏯 東大寺 多言語アナウンス支援システム")
-st.write("よく使うアナウンスを選択、または自由に入力して、各言語で順にアナウンスを流します。")
 
 # 定型文の定義
 templates = {
@@ -42,14 +51,14 @@ templates = {
     }
 }
 
-st.markdown("### 📌 よく使う定型アナウンス（ワンタッチ選択）")
-
-# ボタンの状態を保持するために st.session_state を使用します
+# 状態の初期化
 if "selected_key" not in st.session_state:
     st.session_state.selected_key = "その他（自由入力）"
 
-col1, col2, col3, col4, col5 = st.columns(5)
+st.markdown("##### 📌 定型アナウンス選択")
 
+# スマホでも横並び（または綺麗に折り返し）になるように2行に分けて配置
+col1, col2, col3 = st.columns(3)
 with col1:
     if st.button("🛍️ 落とし物", use_container_width=True):
         st.session_state.selected_key = "落とし物"
@@ -57,17 +66,16 @@ with col2:
     if st.button("👶 迷子", use_container_width=True):
         st.session_state.selected_key = "迷子"
 with col3:
-    if st.button("🚶 入場案内", use_container_width=True):
-        st.session_state.selected_key = "入場案内"
-with col4:
-    if st.button("⏰ 閉門時間", use_container_width=True):
-        st.session_state.selected_key = "閉門時間"
-with col5:
     if st.button("✏️ その他", use_container_width=True):
         st.session_state.selected_key = "その他（自由入力）"
 
-st.markdown(f"**現在のモード:** `{st.session_state.selected_key}`")
-st.markdown("---")
+col4, col5 = st.columns(2)
+with col4:
+    if st.button("🚶 入場案内", use_container_width=True):
+        st.session_state.selected_key = "入場案内"
+with col5:
+    if st.button("⏰ 閉門時間", use_container_width=True):
+        st.session_state.selected_key = "閉門時間"
 
 # テキストの決定
 if st.session_state.selected_key in templates:
@@ -78,25 +86,22 @@ if st.session_state.selected_key in templates:
     ko_text = current_template["ko"]
     fr_text = current_template["fr"]
     
-    st.write("【日本語プレビュー（定型文）】")
-    user_input = st.text_area("テキスト入力", value=ja_text, height=100, label_visibility="collapsed")
-    # 定型文の日本語が編集された場合は日本語のみ編集分を反映、他言語はテンプレートを使用
+    user_input = st.text_area("テキスト入力", value=ja_text, height=80, label_visibility="collapsed")
     ja_text = user_input
 else:
-    # 自由入力モード
-    user_input = st.text_area("テキスト入力", placeholder="ここに自由にアナウンス文を入力してください...", height=100, label_visibility="collapsed")
+    user_input = st.text_area("テキスト入力", placeholder="ここに自由にアナウンス文を入力...", height=80, label_visibility="collapsed")
     ja_text = user_input
     en_text = user_input
     zh_text = user_input
     ko_text = user_input
     fr_text = user_input
 
+# 実行ボタン
 if st.button("🚀 音声アナウンスを開始する", type="primary", use_container_width=True):
     if ja_text.strip():
-        # HTML/JSでブラウザの音声合成APIを順番に実行
         tts_html = f"""
-        <div style="padding: 10px; background-color: #f0f2f6; border-radius: 8px; margin-bottom: 10px;">
-            <p style="margin:0;">🔊 <b>多言語アナウンス再生中（日・英・中・韓・仏）...</b></p>
+        <div style="padding: 8px; background-color: #f0f2f6; border-radius: 8px; margin-bottom: 5px;">
+            <p style="margin:0; font-size: 14px;">🔊 <b>再生中（日・英・中・韓・仏）...</b></p>
         </div>
         <script>
         const messages = [
@@ -125,7 +130,7 @@ if st.button("🚀 音声アナウンスを開始する", type="primary", use_co
         playSequence(0);
         </script>
         """
-        st.components.v1.html(tts_html, height=80)
-        st.success("アナウンスの再生を開始しました！")
+        st.components.v1.html(tts_html, height=60)
+        st.success("再生を開始しました！")
     else:
-        st.warning("アナウンスする文章を入力してください。")
+        st.warning("文章を入力してください。")
