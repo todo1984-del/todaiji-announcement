@@ -44,58 +44,67 @@ templates = {
 
 st.markdown("### 📌 よく使う定型アナウンス（ワンタッチ選択）")
 
+# ボタンの状態を保持するために st.session_state を使用します
+if "selected_key" not in st.session_state:
+    st.session_state.selected_key = "その他（自由入力）"
+
 col1, col2, col3, col4, col5 = st.columns(5)
-selected_text = ""
 
 with col1:
-    if st.button("🛍️ 落とし物"):
-        selected_text = templates["落とし物"]
+    if st.button("🛍️ 落とし物", use_container_width=True):
+        st.session_state.selected_key = "落とし物"
 with col2:
-    if st.button("👶 迷子"):
-        selected_text = templates["迷子"]
+    if st.button("👶 迷子", use_container_width=True):
+        st.session_state.selected_key = "迷子"
 with col3:
-    if st.button("🚶 入場案内"):
-        selected_text = templates["入場案内"]
+    if st.button("🚶 入場案内", use_container_width=True):
+        st.session_state.selected_key = "入場案内"
 with col4:
-    if st.button("⏰ 閉門時間"):
-        selected_text = templates["閉門時間"]
+    if st.button("⏰ 閉門時間", use_container_width=True):
+        st.session_state.selected_key = "閉門時間"
 with col5:
-    if st.button("✏️ その他（自由入力）"):
-        selected_text = {}
+    if st.button("✏️ その他", use_container_width=True):
+        st.session_state.selected_key = "その他（自由入力）"
 
+st.markdown(f"**現在のモード:** `{st.session_state.selected_key}`")
 st.markdown("---")
-st.write("アナウンスしたい文章（編集も可能です）")
 
-# 入力欄
-user_input = st.text_area(
-    "テキスト入力",
-    value=selected_text.get("ja", "") if isinstance(selected_text, dict) else "",
-    placeholder="例：落とし物のお知らせです...",
-    height=100,
-    label_visibility="collapsed"
-)
-
-# 各言語のテキスト取得
-ja_text = selected_text.get("ja", user_input) if isinstance(selected_text, dict) else user_input
-en_text = selected_text.get("en", user_input) if isinstance(selected_text, dict) else user_input
-zh_text = selected_text.get("zh", user_input) if isinstance(selected_text, dict) else user_input
-ko_text = selected_text.get("ko", user_input) if isinstance(selected_text, dict) else user_input
-fr_text = selected_text.get("fr", user_input) if isinstance(selected_text, dict) else user_input
+# テキストの決定
+if st.session_state.selected_key in templates:
+    current_template = templates[st.session_state.selected_key]
+    ja_text = current_template["ja"]
+    en_text = current_template["en"]
+    zh_text = current_template["zh"]
+    ko_text = current_template["ko"]
+    fr_text = current_template["fr"]
+    
+    st.write("【日本語プレビュー（定型文）】")
+    user_input = st.text_area("テキスト入力", value=ja_text, height=100, label_visibility="collapsed")
+    # 定型文の日本語が編集された場合は日本語のみ編集分を反映、他言語はテンプレートを使用
+    ja_text = user_input
+else:
+    # 自由入力モード
+    user_input = st.text_area("テキスト入力", placeholder="ここに自由にアナウンス文を入力してください...", height=100, label_visibility="collapsed")
+    ja_text = user_input
+    en_text = user_input
+    zh_text = user_input
+    ko_text = user_input
+    fr_text = user_input
 
 if st.button("🚀 音声アナウンスを開始する", type="primary", use_container_width=True):
-    if user_input:
-        # ブラウザのWeb Speech API（JavaScript）を利用して順番に音声を再生するHTML/JSコンポーネント
+    if ja_text.strip():
+        # HTML/JSでブラウザの音声合成APIを順番に実行
         tts_html = f"""
-        <div style="padding: 10px; background-color: #f0f2f6; border-radius: 8px;">
-            <p>🔊 <b>多言語アナウンス再生中...</b></p>
+        <div style="padding: 10px; background-color: #f0f2f6; border-radius: 8px; margin-bottom: 10px;">
+            <p style="margin:0;">🔊 <b>多言語アナウンス再生中（日・英・中・韓・仏）...</b></p>
         </div>
         <script>
         const messages = [
-            {{ text: "{ja_text}", lang: "ja-JP" }},
-            {{ text: "{en_text}", lang: "en-US" }},
-            {{ text: "{zh_text}", lang: "zh-CN" }},
-            {{ text: "{ko_text}", lang: "ko-KR" }},
-            {{ text: "{fr_text}", lang: "fr-FR" }}
+            {{ text: {repr(ja_text)}, lang: "ja-JP" }},
+            {{ text: {repr(en_text)}, lang: "en-US" }},
+            {{ text: {repr(zh_text)}, lang: "zh-CN" }},
+            {{ text: {repr(ko_text)}, lang: "ko-KR" }},
+            {{ text: {repr(fr_text)}, lang: "fr-FR" }}
         ];
 
         function playSequence(index) {{
@@ -103,22 +112,20 @@ if st.button("🚀 音声アナウンスを開始する", type="primary", use_co
             const item = messages[index];
             const utterance = new SpeechSynthesisUtterance(item.text);
             utterance.lang = item.lang;
-            utterance.rate = 0.9; // 少し聞き取りやすい速度
+            utterance.rate = 0.9;
             
             utterance.onend = function() {{
-                // 次の言語へ
                 setTimeout(() => playSequence(index + 1), 800);
             }};
             
             window.speechSynthesis.speak(utterance);
         }}
 
-        // 音声合成がストップしていることを確認して再生開始
         window.speechSynthesis.cancel();
         playSequence(0);
         </script>
         """
-        st.components.v1.html(tts_html, height=100)
-        st.success("アナウンスの再生指示を送信しました！")
+        st.components.v1.html(tts_html, height=80)
+        st.success("アナウンスの再生を開始しました！")
     else:
         st.warning("アナウンスする文章を入力してください。")
