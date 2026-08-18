@@ -7,7 +7,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 上部が切れないように余裕を持たせたCSS
+# 上部が切れないようにし、テキストエリアやボタンを使いやすく調整するCSS
 st.markdown("""
     <style>
     .block-container {
@@ -18,6 +18,9 @@ st.markdown("""
         font-size: 1.4rem !important;
         margin-top: 0.5rem;
         margin-bottom: 1rem;
+    }
+    textarea {
+        font-size: 16px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -76,7 +79,7 @@ with col2:
 if st.button("✏️ その他（自由入力）", use_container_width=True):
     st.session_state.selected_key = "その他（自由入力）"
 
-# テキストの決定
+# テキストの決定（入力欄の高さを120pxに拡大）
 if st.session_state.selected_key in templates:
     current_template = templates[st.session_state.selected_key]
     ja_text = current_template["ja"]
@@ -85,31 +88,52 @@ if st.session_state.selected_key in templates:
     ko_text = current_template["ko"]
     fr_text = current_template["fr"]
     
-    user_input = st.text_area("テキスト入力", value=ja_text, height=70, label_visibility="collapsed")
+    user_input = st.text_area("テキスト入力", value=ja_text, height=120, label_visibility="collapsed")
     ja_text = user_input
 else:
-    user_input = st.text_area("テキスト入力", placeholder="自由に文章を入力...", height=70, label_visibility="collapsed")
+    user_input = st.text_area("テキスト入力", placeholder="ここに自由に文章を入力...", height=120, label_visibility="collapsed")
     ja_text = user_input
     en_text = user_input
     zh_text = user_input
     ko_text = user_input
     fr_text = user_input
 
-# 実行ボタン
-if st.button("🚀 音声アナウンスを開始する", type="primary", use_container_width=True):
+# 再生ボタン（2つ用意：多言語連続再生 ＆ 日本語のみ再生）
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    play_all = st.button("🚀 多言語で再生", type="primary", use_container_width=True)
+with col_btn2:
+    play_ja = st.button("🇯🇵 日本語のみ再生", use_container_width=True)
+
+if play_all or play_ja:
     if ja_text.strip():
+        # 再生するメッセージリストを分岐
+        if play_all:
+            messages_js = f"""
+            [
+                {{ text: {repr(ja_text)}, lang: "ja-JP" }},
+                {{ text: {repr(en_text)}, lang: "en-US" }},
+                {{ text: {repr(zh_text)}, lang: "zh-CN" }},
+                {{ text: {repr(ko_text)}, lang: "ko-KR" }},
+                {{ text: {repr(fr_text)}, lang: "fr-FR" }}
+            ]
+            """
+            msg_label = "多言語アナウンス再生中（日・英・中・韓・仏）..."
+        else:
+            messages_js = f"""
+            [
+                {{ text: {repr(ja_text)}, lang: "ja-JP" }}
+            ]
+            """
+            msg_label = "日本語アナウンス再生中..."
+
         tts_html = f"""
         <div style="padding: 6px; background-color: #f0f2f6; border-radius: 6px; margin-bottom: 5px;">
-            <p style="margin:0; font-size: 13px;">🔊 <b>再生中（日・英・中・韓・仏）...</b></p>
+            <p style="margin:0; font-size: 13px;">🔊 <b>{msg_label}</b></p>
         </div>
         <script>
-        const messages = [
-            {{ text: {repr(ja_text)}, lang: "ja-JP" }},
-            {{ text: {repr(en_text)}, lang: "en-US" }},
-            {{ text: {repr(zh_text)}, lang: "zh-CN" }},
-            {{ text: {repr(ko_text)}, lang: "ko-KR" }},
-            {{ text: {repr(fr_text)}, lang: "fr-FR" }}
-        ];
+        const messages = {messages_js};
 
         function playSequence(index) {{
             if (index >= messages.length) return;
