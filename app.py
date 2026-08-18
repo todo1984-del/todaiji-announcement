@@ -1,6 +1,4 @@
 import streamlit as st
-from google.cloud import texttospeech
-import io
 
 # ページの基本設定
 st.set_page_config(
@@ -12,40 +10,7 @@ st.set_page_config(
 st.title("🏯 東大寺 多言語アナウンス支援システム")
 st.write("よく使うアナウンスを選択、または自由に入力して、各言語で順にアナウンスを流します。")
 
-# Google Cloud Text-to-Speech クライアントの初期化
-# ※Streamlit CloudのSecrets機能等で認証情報を読み込む想定、または環境変数を利用します
-@st.cache_resource
-def get_tts_client():
-    return texttospeech.TextToSpeechClient()
-
-def speak_text(text, language_code):
-    """Google Cloud Text-to-Speech API を使用して音声を生成・再生する"""
-    try:
-        client = get_tts_client()
-        input_text = texttospeech.SynthesisInput(text=text)
-        
-        # 音声の設定（言語や性別など）
-        voice = texttospeech.VoiceSelectionParams(
-            language_code=language_code,
-            ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
-        )
-        
-        # 音声ファイル形式の設定 (MP3)
-        audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3
-        )
-        
-        response = client.synthesize_speech(
-            input=input_text, voice=voice, audio_config=audio_config
-        )
-        
-        # AudioとしてStreamlitで再生
-        st.audio(io.BytesIO(response.audio_content), format="audio/mp3", autoplay=True)
-    except Exception as e:
-        st.error(f"音声生成エラー: {e}")
-        st.info("※Google Cloudの認証情報（Secrets）が正しく設定されているか確認してください。")
-
-# 定型文の定義（固有名詞の読み方も含めて完璧な翻訳に固定）
+# 定型文の定義
 templates = {
     "落とし物": {
         "ja": "お知らせいたします。境内にてお忘れ物がございました。お心当たりの方は、お近くの係員までお申し出ください。",
@@ -110,31 +75,50 @@ user_input = st.text_area(
     label_visibility="collapsed"
 )
 
+# 各言語のテキスト取得
+ja_text = selected_text.get("ja", user_input) if isinstance(selected_text, dict) else user_input
+en_text = selected_text.get("en", user_input) if isinstance(selected_text, dict) else user_input
+zh_text = selected_text.get("zh", user_input) if isinstance(selected_text, dict) else user_input
+ko_text = selected_text.get("ko", user_input) if isinstance(selected_text, dict) else user_input
+fr_text = selected_text.get("fr", user_input) if isinstance(selected_text, dict) else user_input
+
 if st.button("🚀 音声アナウンスを開始する", type="primary", use_container_width=True):
     if user_input:
-        st.write("📢 **日本語アナウンス中...**")
-        speak_text(user_input, "ja-JP")
-        
-        # 英語
-        en_text = selected_text.get("en", user_input) if isinstance(selected_text, dict) else user_input
-        st.write("📢 **英語アナウンス中...**")
-        speak_text(en_text, "en-US")
-        
-        # 中国語
-        zh_text = selected_text.get("zh", user_input) if isinstance(selected_text, dict) else user_input
-        st.write("📢 **中国語アナウンス中...**")
-        speak_text(zh_text, "cmn-CN")
-        
-        # 韓国語
-        ko_text = selected_text.get("ko", user_input) if isinstance(selected_text, dict) else user_input
-        st.write("📢 **韓国語アナウンス中...**")
-        speak_text(ko_text, "ko-KR")
-        
-        # フランス語
-        fr_text = selected_text.get("fr", user_input) if isinstance(selected_text, dict) else user_input
-        st.write("📢 **フランス語アナウンス中...**")
-        speak_text(fr_text, "fr-FR")
-        
-        st.success("すべての言語のアナウンスが完了しました！")
+        # ブラウザのWeb Speech API（JavaScript）を利用して順番に音声を再生するHTML/JSコンポーネント
+        tts_html = f"""
+        <div style="padding: 10px; background-color: #f0f2f6; border-radius: 8px;">
+            <p>🔊 <b>多言語アナウンス再生中...</b></p>
+        </div>
+        <script>
+        const messages = [
+            {{ text: "{ja_text}", lang: "ja-JP" }},
+            {{ text: "{en_text}", lang: "en-US" }},
+            {{ text: "{zh_text}", lang: "zh-CN" }},
+            {{ text: "{ko_text}", lang: "ko-KR" }},
+            {{ text: "{fr_text}", lang: "fr-FR" }}
+        ];
+
+        function playSequence(index) {{
+            if (index >= messages.length) return;
+            const item = messages[index];
+            const utterance = new SpeechSynthesisUtterance(item.text);
+            utterance.lang = item.lang;
+            utterance.rate = 0.9; // 少し聞き取りやすい速度
+            
+            utterance.onend = function() {{
+                // 次の言語へ
+                setTimeout(() => playSequence(index + 1), 800);
+            }};
+            
+            window.speechSynthesis.speak(utterance);
+        }}
+
+        // 音声合成がストップしていることを確認して再生開始
+        window.speechSynthesis.cancel();
+        playSequence(0);
+        </script>
+        """
+        st.components.v1.html(tts_html, height=100)
+        st.success("アナウンスの再生指示を送信しました！")
     else:
         st.warning("アナウンスする文章を入力してください。")
