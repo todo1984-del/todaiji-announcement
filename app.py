@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="アナウンス支援", page_icon="🔊", layout="centered")
+st.set_page_config(page_title="多言語アナウンス支援", page_icon="🔊", layout="centered")
 
 st.markdown("""
     <style>
@@ -9,23 +9,23 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🔊 アナウンス支援（固定文版）")
+st.title("🔊 アナウンス支援（警備詰所版）")
 
-# 固定文章の定義
+# 固定文章の定義（場所を「大仏殿中門前」に修正）
 templates = {
     "落とし物": {
-        "ja": "お知らせいたします。境内にてお忘れ物がございます。お心当たりの方は、南大門横の警備詰所までお越しください。",
-        "en": "Attention please. An item has been lost within the temple grounds. If you think it is yours, please come to the Security Office next to the Nandaimon Gate.",
-        "zh": "请注意。境内发现了遗失物品。如有失领者，请前往南大门旁的警备室。",
-        "ko": "안내 말씀 드립니다. 경내에서 분실물이 발견되었습니다. 해당하는 분께서는 남대문 옆 경비실로 와주시기 바랍니다.",
-        "fr": "Attention s'il vous plaît. Un objet a été perdu dans l'enceinte du temple. Si vous pensez qu'il s'agit du vôtre, veuillez vous rendre au poste de sécurité situé à côté de la porte Nandaimon."
+        "ja": "お知らせいたします。境内にてお忘れ物がございます。お心当たりの方は、大仏殿中門前の警備詰所までお越しください。",
+        "en": "Attention please. An item has been lost within the temple grounds. If you think it is yours, please come to the Security Office in front of the Daibutsuden Chumon Gate.",
+        "zh": "请注意。境内发现了遗失物品。如有失领者，请前往大佛殿中门前的警备室。",
+        "ko": "안내 말씀 드립니다. 경내에서 분실물이 발견되었습니다. 해당하는 분께서는 대불전 중문 앞 경비실로 와주시기 바랍니다.",
+        "fr": "Attention s'il vous plaît. Un objet a été perdu dans l'enceinte du temple. Si vous pensez qu'il s'agit du vôtre, veuillez vous rendre au poste de sécurité devant la porte Chumon du Daibutsuden."
     },
     "迷子": {
-        "ja": "迷子のお知らせです。お連れ様を探しているお子様を保護しております。お心当たりの方は、南大門横の警備詰所までお越しください。",
-        "en": "This is a lost child announcement. We are looking after a child who is looking for their guardian. If you think this is your child, please come to the Security Office next to the Nandaimon Gate.",
-        "zh": "寻人广播。我们正在照看一位找不到家人的小朋友。请其家人尽快前往南大门旁的警备室。",
-        "ko": "미아 안내 말씀 드립니다. 일행을 찾고 있는 아이를 보호하고 있습니다. 해당하는 분께서는 남대문 옆 경비실로 와주시기 바랍니다.",
-        "fr": "C'est un avis d'enfant perdu. Nous prenons soin d'un enfant qui cherche son accompagnateur. Si vous pensez qu'il s'agit du vôtre, veuillez vous rendre au poste de sécurité situé à côté de la porte Nandaimon."
+        "ja": "迷子のお知らせです。お連れ様を探しているお子様を保護しております。お心当たりの方は、大仏殿中門前の警備詰所までお越しください。",
+        "en": "This is a lost child announcement. We are looking after a child who is looking for their guardian. If you think this is your child, please come to the Security Office in front of the Daibutsuden Chumon Gate.",
+        "zh": "寻人广播。我们正在照看一位找不到家人的小朋友。请其家人尽快前往大佛殿中门前的警备室。",
+        "ko": "미아 안내 말씀 드립니다. 일행을 찾고 있는 아이를 보호하고 있습니다. 해당하는 분께서는 대불전 중문 앞 경비실로 와주시기 바랍니다.",
+        "fr": "C'est un avis d'enfant perdu. Nous prenons soin d'un enfant qui cherche son accompagnateur. Si vous pensez qu'il s'agit du vôtre, veuillez vous rendre au poste de sécurité devant la porte Chumon du Daibutsuden."
     },
     "混雑時": {
         "ja": "ただいま券売場が大変混雑しております。南大門横のミュージアムにてセット券をお求めいただくと、並ばずに入堂できます。ぜひご利用ください。",
@@ -43,17 +43,47 @@ templates = {
     }
 }
 
-# 選択機能
-selected = st.selectbox("アナウンス内容を選択してください", list(templates.keys()))
+# 選択 UI
+selected = st.selectbox("アナウンス内容を選択", list(templates.keys()))
 text = templates[selected]["ja"]
 st.info(f"【配信内容】\n\n{text}")
 
-# 再生ボタン
+# 再生ボタン（多言語 ＆ 日本語）
 col1, col2 = st.columns(2)
-if col1.button("🚀 多言語で再生", type="primary", use_container_width=True):
-    # 再生処理（先ほどのJavaScript構成と同じロジックをここに）
-    # ... (省略: 以前のHTML/JS埋め込みコードをここに流し込む)
-    st.success(f"{selected}を多言語で再生中...")
+play_all = col1.button("🚀 多言語で再生", type="primary", use_container_width=True)
+play_ja = col2.button("🇯🇵 日本語のみ再生", use_container_width=True)
 
-if col2.button("🇯🇵 日本語のみ再生", use_container_width=True):
-    st.success(f"{selected}を日本語で再生中...")
+if play_all or play_ja:
+    t = templates[selected]
+    # 再生リスト作成
+    if play_all:
+        messages = [
+            {"text": t["ja"], "lang": "ja-JP"},
+            {"text": t["en"], "lang": "en-US"},
+            {"text": t["zh"], "lang": "zh-CN"},
+            {"text": t["ko"], "lang": "ko-KR"},
+            {"text": t["fr"], "lang": "fr-FR"}
+        ]
+    else:
+        messages = [{"text": t["ja"], "lang": "ja-JP"}]
+
+    # JSで連続再生
+    import json
+    js_messages = json.dumps(messages)
+    tts_html = f"""
+    <script>
+    const messages = {js_messages};
+    function playSequence(index) {{
+        if (index >= messages.length) return;
+        const u = new SpeechSynthesisUtterance(messages[index].text);
+        u.lang = messages[index].lang;
+        u.rate = 0.9;
+        u.onend = () => setTimeout(() => playSequence(index + 1), 800);
+        window.speechSynthesis.speak(u);
+    }}
+    window.speechSynthesis.cancel();
+    playSequence(0);
+    </script>
+    """
+    st.components.v1.html(tts_html, height=0)
+    st.success(f"「{selected}」を再生中...")
