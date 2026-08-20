@@ -3,7 +3,7 @@ import json
 
 st.set_page_config(page_title="多言語アナウンス支援", page_icon="🔊", layout="centered")
 
-# 固定文章の定義：読み上げ用にはひらがなを混ぜて発音を制御
+# --- メイン：固定文章の定義（読み上げ用・多言語対応） ---
 templates = {
     "落とし物": {
         "ja": "お知らせいたします。境内にてお忘れ物がございます。お心当たりの方は、大仏殿中門前（だいぶつでんちゅうもんまえ）の警備詰所までお越しください。",
@@ -39,19 +39,28 @@ templates = {
     }
 }
 
+st.header("🔊 定型アナウンス（多言語）")
 selected = st.selectbox("アナウンス内容を選択", list(templates.keys()))
 st.info(f"【配信内容】\n\n{templates[selected]['ja']}")
 
+# 定型文の再生ボタン（多言語 ＆ 日本語のみ）
 col1, col2 = st.columns(2)
-if col1.button("🚀 多言語で再生", type="primary", use_container_width=True):
+play_all = col1.button("🚀 多言語で再生", type="primary", use_container_width=True)
+play_ja = col2.button("🇯🇵 日本語のみ再生", use_container_width=True)
+
+if play_all or play_ja:
     t = templates[selected]
-    messages = [
-        {"text": t["ja_read"], "lang": "ja-JP"}, # 読み上げ用の読み仮名付きテキストを使用
-        {"text": t["en"], "lang": "en-US"},
-        {"text": t["zh"], "lang": "zh-CN"},
-        {"text": t["ko"], "lang": "ko-KR"},
-        {"text": t["fr"], "lang": "fr-FR"}
-    ]
+    if play_all:
+        messages = [
+            {"text": t["ja_read"], "lang": "ja-JP"},
+            {"text": t["en"], "lang": "en-US"},
+            {"text": t["zh"], "lang": "zh-CN"},
+            {"text": t["ko"], "lang": "ko-KR"},
+            {"text": t["fr"], "lang": "fr-FR"}
+        ]
+    else:
+        messages = [{"text": t["ja_read"], "lang": "ja-JP"}]
+
     js_code = f"""
     <script>
     const msgs = {json.dumps(messages)};
@@ -68,3 +77,35 @@ if col1.button("🚀 多言語で再生", type="primary", use_container_width=Tr
     </script>
     """
     st.components.v1.html(js_code, height=0)
+    st.success(f"「{selected}」を再生中...")
+
+st.divider()
+
+# --- 追加機能：自由入力（コピペ用・言語指定再生） ---
+st.header("📝 自由入力・コピペ再生（追加機能）")
+free_text = st.text_area("外国語や別の文章を貼り付け", height=80, placeholder="ここにテキストをコピペ...")
+free_lang = st.selectbox("言語を選択してください", ["英語 (en)", "中国語 (zh)", "韓国語 (ko)", "フランス語 (fr)", "日本語 (ja)"])
+
+lang_code_map = {
+    "英語 (en)": "en-US",
+    "中国語 (zh)": "zh-CN",
+    "韓国語 (ko)": "ko-KR",
+    "フランス語 (fr)": "fr-FR",
+    "日本語 (ja)": "ja-JP"
+}
+
+if st.button("🚀 コピペした文章を単独再生", use_container_width=True):
+    if free_text.strip():
+        selected_lang_code = lang_code_map[free_lang]
+        free_js = f"""
+        <script>
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance({json.dumps(free_text)});
+        u.lang = "{selected_lang_code}";
+        window.speechSynthesis.speak(u);
+        </script>
+        """
+        st.components.v1.html(free_js, height=0)
+        st.success(f"コピペ文章を再生中（{free_lang}）...")
+    else:
+        st.warning("文章が入力されていません。")
