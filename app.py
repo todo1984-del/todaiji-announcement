@@ -3,16 +3,16 @@ import json
 
 st.set_page_config(page_title="多言語アナウンス支援", page_icon="🔊", layout="centered")
 
-# --- レイアウト調整CSS（タイトルを小さく、余白を削減） ---
+# --- レイアウト調整CSS（上部が切れないように余裕を持たせる） ---
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1rem;
+        padding-top: 2.5rem;
         padding-bottom: 1rem;
     }
     h1 {
         font-size: 1.2rem !important;
-        margin-top: 0rem;
+        margin-top: 0.5rem;
         margin-bottom: 0.5rem;
     }
     h3 {
