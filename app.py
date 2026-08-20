@@ -3,7 +3,29 @@ import json
 
 st.set_page_config(page_title="多言語アナウンス支援", page_icon="🔊", layout="centered")
 
-# --- メイン：固定文章の定義（読み上げ用・多言語対応） ---
+# --- レイアウト調整CSS（タイトルを小さく、余白を削減） ---
+st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    h1 {
+        font-size: 1.2rem !important;
+        margin-top: 0rem;
+        margin-bottom: 0.5rem;
+    }
+    h3 {
+        font-size: 1.1rem !important;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("🔊 多言語アナウンス支援")
+
+# --- 定型文定義 ---
 templates = {
     "落とし物": {
         "ja": "お知らせいたします。境内にてお忘れ物がございます。お心当たりの方は、大仏殿中門前（だいぶつでんちゅうもんまえ）の警備詰所までお越しください。",
@@ -39,73 +61,35 @@ templates = {
     }
 }
 
-st.header("🔊 定型アナウンス（多言語）")
-selected = st.selectbox("アナウンス内容を選択", list(templates.keys()))
-st.info(f"【配信内容】\n\n{templates[selected]['ja']}")
+# --- 画面表示 ---
+st.subheader("📌 定型アナウンス")
+selected = st.selectbox("アナウンス内容を選択", list(templates.keys()), label_visibility="collapsed")
+st.info(f"{templates[selected]['ja']}")
 
-# 定型文の再生ボタン（多言語 ＆ 日本語のみ）
-col1, col2 = st.columns(2)
-play_all = col1.button("🚀 多言語で再生", type="primary", use_container_width=True)
-play_ja = col2.button("🇯🇵 日本語のみ再生", use_container_width=True)
-
-if play_all or play_ja:
+if st.button("🚀 多言語で再生", type="primary", use_container_width=True):
     t = templates[selected]
-    if play_all:
-        messages = [
-            {"text": t["ja_read"], "lang": "ja-JP"},
-            {"text": t["en"], "lang": "en-US"},
-            {"text": t["zh"], "lang": "zh-CN"},
-            {"text": t["ko"], "lang": "ko-KR"},
-            {"text": t["fr"], "lang": "fr-FR"}
-        ]
-    else:
-        messages = [{"text": t["ja_read"], "lang": "ja-JP"}]
-
-    js_code = f"""
-    <script>
-    const msgs = {json.dumps(messages)};
-    let i = 0;
-    function play() {{
-        if (i >= msgs.length) return;
-        const u = new SpeechSynthesisUtterance(msgs[i].text);
-        u.lang = msgs[i].lang;
-        u.onend = () => {{ i++; setTimeout(play, 800); }};
-        window.speechSynthesis.speak(u);
-    }}
-    window.speechSynthesis.cancel();
-    play();
-    </script>
-    """
-    st.components.v1.html(js_code, height=0)
-    st.success(f"「{selected}」を再生中...")
+    messages = [
+        {"text": t["ja_read"], "lang": "ja-JP"},
+        {"text": t["en"], "lang": "en-US"},
+        {"text": t["zh"], "lang": "zh-CN"},
+        {"text": t["ko"], "lang": "ko-KR"},
+        {"text": t["fr"], "lang": "fr-FR"}
+    ]
+    js = f"""<script>const msgs={json.dumps(messages)};let i=0;function play(){{if(i>=msgs.length)return;const u=new SpeechSynthesisUtterance(msgs[i].text);u.lang=msgs[i].lang;u.onend=()=>{{i++;setTimeout(play,800);}};window.speechSynthesis.speak(u);}}window.speechSynthesis.cancel();play();</script>"""
+    st.components.v1.html(js, height=0)
 
 st.divider()
 
-# --- 追加機能：自由入力（コピペ用・言語指定再生） ---
-st.header("📝 自由入力・コピペ再生（追加機能）")
-free_text = st.text_area("外国語や別の文章を貼り付け", height=80, placeholder="ここにテキストをコピペ...")
-free_lang = st.selectbox("言語を選択してください", ["英語 (en)", "中国語 (zh)", "韓国語 (ko)", "フランス語 (fr)", "日本語 (ja)"])
+# --- 追加機能：自由入力 ---
+st.subheader("📝 自由入力・コピペ再生")
+user_text = st.text_area("テキストを貼り付け", height=70, placeholder="ここにテキストをコピペ...", label_visibility="collapsed")
+lang_select = st.selectbox("言語を選択", ["英語 (en)", "中国語 (zh)", "韓国語 (ko)", "フランス語 (fr)", "日本語 (ja)"], label_visibility="collapsed")
 
-lang_code_map = {
-    "英語 (en)": "en-US",
-    "中国語 (zh)": "zh-CN",
-    "韓国語 (ko)": "ko-KR",
-    "フランス語 (fr)": "fr-FR",
-    "日本語 (ja)": "ja-JP"
-}
+lang_map = {"英語 (en)":"en-US", "中国語 (zh)":"zh-CN", "韓国語 (ko)":"ko-KR", "フランス語 (fr)":"fr-FR", "日本語 (ja)":"ja-JP"}
 
-if st.button("🚀 コピペした文章を単独再生", use_container_width=True):
-    if free_text.strip():
-        selected_lang_code = lang_code_map[free_lang]
-        free_js = f"""
-        <script>
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance({json.dumps(free_text)});
-        u.lang = "{selected_lang_code}";
-        window.speechSynthesis.speak(u);
-        </script>
-        """
-        st.components.v1.html(free_js, height=0)
-        st.success(f"コピペ文章を再生中（{free_lang}）...")
+if st.button("🚀 コピペ文章を再生", use_container_width=True):
+    if user_text:
+        js = f"""<script>window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance({json.dumps(user_text)});u.lang="{lang_map[lang_select]}";window.speechSynthesis.speak(u);</script>"""
+        st.components.v1.html(js, height=0)
     else:
-        st.warning("文章が入力されていません。")
+        st.warning("文章を入力してください")
