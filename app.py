@@ -1,33 +1,46 @@
 import streamlit as st
 import json
 
-st.title("🔊 アナウンス支援（自由入力＆翻訳版）")
+st.set_page_config(page_title="アナウンス支援", page_icon="🔊", layout="centered")
 
-# 自由入力エリア
-user_text = st.text_area("アナウンスしたい内容を入力してください（日本語）", height=100)
+# --- 定型文エリア ---
+st.header("🔊 定型アナウンス")
+templates = {
+    "落とし物": {"ja": "お知らせいたします。境内にてお忘れ物がございます。お心当たりの方は、だいぶつでんちゅうもんまえの警備詰所までお越しください。"},
+    "迷子": {"ja": "迷子のお知らせです。お連れ様を探しているお子様を保護しております。だいぶつでんちゅうもんまえの警備詰所までお越しください。"},
+    # ... 他の定型文も必要に応じて追加
+}
 
-# 翻訳後の言語を選択
-target_lang = st.selectbox("翻訳後の言語を選択", ["英語", "中国語", "韓国語", "フランス語"])
+selected = st.selectbox("定型文を選択", list(templates.keys()))
+if st.button("定型文を日本語で再生"):
+    js = f"<script>const u=new SpeechSynthesisUtterance('{templates[selected]['ja']}');u.lang='ja-JP';window.speechSynthesis.speak(u);</script>"
+    st.components.v1.html(js, height=0)
 
-# 翻訳と読み上げロジック（簡易版）
-if st.button("🎤 翻訳して再生"):
-    if not user_text:
-        st.warning("文章を入力してください")
-    else:
-        # ここで本当はAPIを使いますが、今回は簡易的にブラウザの翻訳機能を介さず、
-        # プログラム側で辞書的に変換する仕組みを作ると安定します。
-        # まずは「日本語を読み上げる」ことから始め、
-        # 必要に応じて翻訳API（Google Cloud Translation APIなど）を組み込むのがベストです。
-        
-        st.info(f"「{user_text}」を{target_lang}に翻訳して再生準備中...")
-        
-        # 連続再生JS（簡易翻訳後のテキストをここに入れる設計にできます）
-        # 今日の勤務では、まず「入力した日本語を読み上げる」機能を確実に動作させることを優先しましょう
-        js_code = f"""
+st.divider()
+
+# --- 自由入力エリア（コピペ用） ---
+st.header("📝 自由入力（コピペ用）")
+user_text = st.text_area("ここにテキストを貼り付けてください", height=100)
+lang_select = st.selectbox("言語を選択", ["日本語", "英語", "中国語", "韓国語", "フランス語"])
+
+lang_map = {
+    "日本語": "ja-JP",
+    "英語": "en-US",
+    "中国語": "zh-CN",
+    "韓国語": "ko-KR",
+    "フランス語": "fr-FR"
+}
+
+if st.button("🚀 コピペした内容を再生"):
+    if user_text:
+        js = f"""
         <script>
+        window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance("{user_text}");
-        u.lang = 'ja-JP';
+        u.lang = "{lang_map[lang_select]}";
         window.speechSynthesis.speak(u);
         </script>
         """
-        st.components.v1.html(js_code, height=0)
+        st.components.v1.html(js, height=0)
+    else:
+        st.warning("文章を貼り付けてください")
